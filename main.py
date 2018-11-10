@@ -1,4 +1,5 @@
 from collections import Counter
+import queue
 
 
 class Node:
@@ -7,8 +8,8 @@ class Node:
         self.neighbor_list = {}
         self.visit = False
 
-    def __str__(self):
-        return str(self.name_id) + ' connectedTo: ' + str([x.name_id for x in self.neighbor_list])
+#    def __str__(self):
+#        return str(self.name_id) + ' connectedTo: ' + str([x.name_id for x in self.neighbor_list])
 #    def __str__(self):
 #        res = f'  OUEUE QD{self.name_id:.0f}\n'\
 #              f'  SEIZE DD{self.name_id:.0f}\n' \
@@ -19,18 +20,6 @@ class Node:
 
     def add_neighbor(self, neighbor, weight=1):
         self.neighbor_list[neighbor] = weight
-
-    def get_name(self):
-        return self.name_id
-
-    def get_neighbor(self):
-        return self.neighbor_list
-
-    def is_visit(self):
-        return self.visit
-
-    def get_weight(self, id_neighbor):
-        return self.neighbor_list[id_neighbor]
 
 
 class Graph:
@@ -49,8 +38,11 @@ class Graph:
             self.add_vertex(second)
         self.vertex_list[first].add_neighbor(second, weight)
 
-    def get_vertex(self, item):
-        return self.vertex_list[item]
+    def all_visit(self):
+        for i in self.vertex_list:
+            if not self.vertex_list[i].visit:
+                return False
+        return True
 
     def __contains__(self, item):
         return item in self.vertex_list
@@ -59,21 +51,29 @@ class Graph:
         return iter(self.vertex_list.values())
 
 
+g = Graph()
+
+with open('ver8.txt') as file:
+    for line in file:
+        tmp = [float(i.strip()) for i in line.split(',')]
+        g.add_edge(tmp[0], tmp[2], tmp[1])
+
+stack = queue.LifoQueue()
+
+
+
+
+
 def main():
     graph = []
-
     with open('ver8.txt') as f:
         for l in f:
             graph.append([float(i) for i in l.split(', ')])
-
     result = ' SIMULATE\n'
-
     generate_transacts = [10, 20, 10]
-
     output_paths = Counter([graph[i][0] for i in range(len(graph))])
     entrance_paths = Counter([graph[i][2] for i in range(len(graph))])
     start = list(set(output_paths) - set(entrance_paths))
-
     num_node = 0
     points_entrance = 0
     flag = True
@@ -103,9 +103,8 @@ def main():
             num_node = [graph[i][0] for i in range(len(graph))].index(start[points_entrance])
         else:
             num_node = [graph[i][0] for i in range(len(graph))].index(graph[num_node][2])
-
     result += '  GENERATE 100\n' \
               '  TERMINATE 1\n' \
               '  START 1\n' \
               ' END'
-#   print(result)
+    print(result)
