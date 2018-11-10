@@ -1,66 +1,111 @@
 from collections import Counter
 
-graph1 = [
-    [1, 0.6, 4], [1, 0.4, 5],
-    [2, 0.5, 5], [2, 0.5, 6],
-    [3, 1, 6],
-    [4, 0.6, 5], [4, 0.4, 8],
-    [5, 1, 8],
-    [6, 0.8, 7], [6, 0.2, 8],
-    [7, 0.7, 8], [7, 0.3, 4],
-    [8, 0.3, 6]
-]
 
-graph = [
-    [1, 0.8, 7], [1, 0.2, 5],
-    [2, 0.5, 4], [2, 0.5, 5],
-    [3, 0.7, 4], [3, 0.3, 6],
-    [4, 0.5, 6], [4, 0.5, 7],
-    [5, 1, 7],
-    [6, 0.9, 8], [6, 0.1, 4],
-    [7, 0.6, 6], [7, 0.4, 8],
-    [8, 1, 9]
-]
+class Node:
+    def __init__(self, name):
+        self.name_id = name
+        self.neighbor_list = {}
+        self.visit = False
 
-print(' SIMULATE')
+    def __str__(self):
+        return str(self.name_id) + ' connectedTo: ' + str([x.name_id for x in self.neighbor_list])
+#    def __str__(self):
+#        res = f'  OUEUE QD{self.name_id:.0f}\n'\
+#              f'  SEIZE DD{self.name_id:.0f}\n' \
+#              f'  DEPART QD{self.name_id:.0f}\n' \
+#              f'  ADVANCE 1{self.name_id:.0f}\n' \
+#              f'  RELEASE DD{self.name_id:.0f}\n'
+#        return res
 
-gen = [10, 20, 10]
+    def add_neighbor(self, neighbor, weight=1):
+        self.neighbor_list[neighbor] = weight
 
-output_paths = Counter([graph[i][0] for i in range(len(graph))])
-entrance_paths = Counter([graph[i][2] for i in range(len(graph))])
-start = list(set(output_paths) - set(entrance_paths))
+    def get_name(self):
+        return self.name_id
 
-num_node = 0
-c = 0
-flag = True
+    def get_neighbor(self):
+        return self.neighbor_list
 
-while c != 3:
-    if flag:
-        print(f'  GENERATE {str(gen[c])}')
-        c += 1
-        flag = False
+    def is_visit(self):
+        return self.visit
 
-    if entrance_paths[graph[num_node][0]] < 2:
-        print(f'  OUEUE QD{str(graph[num_node][0])}')
-    else:
-        print(f'LAB{str(graph[num_node][0])} OUEUE QD{str(graph[num_node][0])}')
+    def get_weight(self, id_neighbor):
+        return self.neighbor_list[id_neighbor]
 
-    print(f'  SEIZE DD{str(graph[num_node][0])}\n'
-          f'  DEPART QD{str(graph[num_node][0])}\n'
-          f'  ADVANCE 1{str(graph[num_node][0])}\n'
-          f'  RELEASE DD{str(graph[num_node][0])}')
-    if output_paths[graph[num_node][0]] > 1:
-        print(f'  TRANSFER {str(graph[num_node + 1][1])}'
-              f',,LAB{str(graph[num_node + 1][2])}')
 
-    if graph[num_node][0] == 8:
-        print('  TERMINATE')
-        flag = True
-        num_node = [graph[j][0] for j in range(len(graph))].index(start[c])
-    else:
-        num_node = [graph[j][0] for j in range(len(graph))].index(graph[num_node][2])
+class Graph:
+    def __init__(self):
+        self.vertex_list = {}
+        self.size = 0
 
-print('  GENERATE 100\n'
-      '  TERMINATE 1\n'
-      '  START 1\n'
-      ' END')
+    def add_vertex(self, item):
+        self.size += 1
+        self.vertex_list[item] = Node(item)
+
+    def add_edge(self, first, second, weight):
+        if first not in self.vertex_list:
+            self.add_vertex(first)
+        if second not in self.vertex_list:
+            self.add_vertex(second)
+        self.vertex_list[first].add_neighbor(second, weight)
+
+    def get_vertex(self, item):
+        return self.vertex_list[item]
+
+    def __contains__(self, item):
+        return item in self.vertex_list
+
+    def __iter__(self):
+        return iter(self.vertex_list.values())
+
+
+def main():
+    graph = []
+
+    with open('ver8.txt') as f:
+        for l in f:
+            graph.append([float(i) for i in l.split(', ')])
+
+    result = ' SIMULATE\n'
+
+    generate_transacts = [10, 20, 10]
+
+    output_paths = Counter([graph[i][0] for i in range(len(graph))])
+    entrance_paths = Counter([graph[i][2] for i in range(len(graph))])
+    start = list(set(output_paths) - set(entrance_paths))
+
+    num_node = 0
+    points_entrance = 0
+    flag = True
+
+    while points_entrance != 3:
+        if flag:
+            result += f'  GENERATE {generate_transacts[points_entrance]}\n'
+            points_entrance += 1
+            flag = False
+
+        if entrance_paths[graph[num_node][0]] < 2:
+            result += f'  OUEUE QD{graph[num_node][0]}\n'
+        else:
+            result += f'LAB{graph[num_node][0]} OUEUE QD{graph[num_node][0]}\n'\
+                      f'  SEIZE DD{graph[num_node][0]}\n' \
+                      f'  DEPART QD{graph[num_node][0]}\n' \
+                      f'  ADVANCE 1{graph[num_node][0]}\n' \
+                      f'  RELEASE DD{graph[num_node][0]}\n'
+
+        if output_paths[graph[num_node][0]] > 1:
+            result += f'  TRANSFER {graph[num_node + 1][1]}' \
+                      f',,LAB{graph[num_node + 1][2]}\n'
+
+        if graph[num_node][0] == 8:
+            result += '  TERMINATE\n'
+            flag = True
+            num_node = [graph[i][0] for i in range(len(graph))].index(start[points_entrance])
+        else:
+            num_node = [graph[i][0] for i in range(len(graph))].index(graph[num_node][2])
+
+    result += '  GENERATE 100\n' \
+              '  TERMINATE 1\n' \
+              '  START 1\n' \
+              ' END'
+#   print(result)
