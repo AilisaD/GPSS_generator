@@ -21,7 +21,7 @@ class Node:
         if self.name_id == 8:
             if len(self.neighbor) > 0:
                 res += (
-                    f'\nTRANSFER {list(self.neighbor.values())[0]},'
+                    f'\nTRANSFER .{int(list(self.neighbor.values())[0]*10)},'
                     f',LAB{list(self.neighbor.keys())[0]}')
             res += '\nTERMINATE'
         return res
@@ -96,7 +96,9 @@ while not g.all_visit():
 
     # index of one from neighbors
     next_vertex = list(current_vertex.neighbor.keys())[0]
-
+    if len(current_vertex.neighbor) == 1 and len(g.unvisited()) == 0:
+        s = f'TRANSFER ,LAB{next_vertex}'
+        code_lines.append(s)
     if len(current_vertex.neighbor) > 1:
         # index of other neighbor
         t_vertex = list(current_vertex.neighbor.keys())[1]
@@ -106,7 +108,7 @@ while not g.all_visit():
             t_vertex = next_vertex
             next_vertex = tmp
 
-        s = f'TRANSFER {current_vertex.neighbor[t_vertex]},'
+        s = f'TRANSFER .{int(current_vertex.neighbor[t_vertex]*10)},'
 
         if g.vertex_list[next_vertex].visit:
             s += f'LAB{next_vertex}'
@@ -126,7 +128,8 @@ code_lines.extend(end_code)
 with open('ver_code3.txt', 'w') as file:
     for line_code in code_lines:
         count = 3
-
+        if 'LAB' in line_code and 'QUEUE' in line_code:
+            count = 2
         if line_code == 'SIMULATE' or line_code == 'END':
             count = 2
 
