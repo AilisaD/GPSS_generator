@@ -1,4 +1,3 @@
-from collections import Counter
 from typing import Dict
 
 
@@ -145,59 +144,3 @@ with open('ver_code8.txt', 'w') as file:
 
         if 'GENERATE' in line_code:
             file.write('\n')
-
-
-def main():
-    graph = []
-    with open('ver8.txt') as f:
-        for l in f:
-            graph.append([
-                type_(i.strip())
-                for type_, i in zip((int, float, int), l.split(','))])
-    result = ' SIMULATE\n'
-    generate_transacts = [10, 20, 10]
-    output_paths = Counter([graph[i][0] for i in range(len(graph))])
-    entrance_paths = Counter([graph[i][2] for i in range(len(graph))])
-    start = list(set(output_paths) - set(entrance_paths))
-    num_node = 0
-    points_entrance = 0
-    flag = True
-
-    while points_entrance != 3:
-        if flag:
-            result += f'  GENERATE {generate_transacts[points_entrance]}\n'
-            points_entrance += 1
-            flag = False
-
-        if entrance_paths[graph[num_node][0]] < 2:
-            result += f'  OUEUE QD{graph[num_node][0]}\n'
-        else:
-            result += (
-                f'LAB{graph[num_node][0]} OUEUE QD{graph[num_node][0]}\n'
-                f'  SEIZE DD{graph[num_node][0]}\n'
-                f'  DEPART QD{graph[num_node][0]}\n'
-                f'  ADVANCE 1{graph[num_node][0]}\n'
-                f'  RELEASE DD{graph[num_node][0]}\n'
-            )
-
-        if output_paths[graph[num_node][0]] > 1:
-            result += f'  TRANSFER {graph[num_node + 1][1]}' \
-                      f',,LAB{graph[num_node + 1][2]}\n'
-
-        if graph[num_node][0] == 8:
-            result += '  TERMINATE\n'
-            flag = True
-            for i in range(len(graph)):
-                if graph[i][0] == start[points_entrance]:
-                    num_node = i
-                    break
-        else:
-            for i in range(len(graph)):
-                if graph[i][0] == graph[num_node][2]:
-                    num_node = i
-                    break
-    result += '  GENERATE 100\n' \
-              '  TERMINATE 1\n' \
-              '  START 1\n' \
-              ' END'
-    print(result)
