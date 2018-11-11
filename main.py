@@ -1,35 +1,49 @@
 from collections import Counter
-import queue
+from typing import Dict
 
 
 class Node:
-    def __init__(self, name):
-        self.name_id = name
-        self.neighbor_list = {}
-        self.visit = False
+    def __init__(self, name: int, generate: int=None):
+        """
+        Нода в графе.
 
-#    def __str__(self):
-#        return str(self.name_id) + ' connectedTo: ' + str([x.name_id for x in self.neighbor_list])
-#    def __str__(self):
-#        res = f'  OUEUE QD{self.name_id:.0f}\n'\
-#              f'  SEIZE DD{self.name_id:.0f}\n' \
-#              f'  DEPART QD{self.name_id:.0f}\n' \
-#              f'  ADVANCE 1{self.name_id:.0f}\n' \
-#              f'  RELEASE DD{self.name_id:.0f}\n'
-#        return res
+        Args:
+            name: Название ноды.
+            generate: Генертруемое число транзактов
+        """
+        self.name_id = name
+        self.neighbor = {}  # type: Dict[int, float]
+        self.visit = False
+        self.generate = generate
+        self.number_input_edges = 0
+
+    def __str__(self):
+        label = f'LAB{self.name_id} ' if self.number_input_edges > 1 else ''
+        res = (
+            f'{label}QUEUE QD{self.name_id}\n'
+            f'SEIZE DD{self.name_id}\n'
+            f'DEPART QD{self.name_id}\n'
+            f'ADVANCE 1{self.name_id}\n'
+            f'RELEASE DD{self.name_id}'
+        )
+        if self.name_id == 8:
+            if len(self.neighbor) > 0:
+                res += (
+                    f'\nTRANSFER {list(self.neighbor.values())[0]},'
+                    f',LAB{list(self.neighbor.keys())[0]}')
+            res += '\nTERMINATE'
+        return res
 
     def add_neighbor(self, neighbor, weight=1):
-        self.neighbor_list[neighbor] = weight
+        self.neighbor[neighbor] = weight
 
 
 class Graph:
     def __init__(self):
-        self.vertex_list = {}
-        self.size = 0
+        self.vertex_list = {}  # type: Dict[int, Node]
 
-    def add_vertex(self, item):
-        self.size += 1
-        self.vertex_list[item] = Node(item)
+    def add_vertex(self, item, generate=None):
+        self.vertex_list[item] = Node(item, generate)
 
     def add_edge(self, first, second, weight):
         if first not in self.vertex_list:
@@ -37,6 +51,7 @@ class Graph:
         if second not in self.vertex_list:
             self.add_vertex(second)
         self.vertex_list[first].add_neighbor(second, weight)
+        self.vertex_list[second].number_input_edges += 1
 
     def all_visit(self):
         for i in self.vertex_list:
@@ -50,25 +65,95 @@ class Graph:
     def __iter__(self):
         return iter(self.vertex_list.values())
 
+    def unvisited(self):
+        return [k for k in self.vertex_list if not self.vertex_list[k].visit]
+
 
 g = Graph()
 
 with open('ver8.txt') as file:
     for line in file:
-        tmp = [float(i.strip()) for i in line.split(',')]
+        if not line.strip():
+            break
+        tmp = line.split()
+        g.add_vertex(int(tmp[0]), int(tmp[1]))
+
+    for line in file:
+        tmp = [
+            type_(i.strip())
+            for type_, i in zip((int, float, int), line.split(','))
+        ]
         g.add_edge(tmp[0], tmp[2], tmp[1])
 
-stack = queue.LifoQueue()
+current_vertex = g.vertex_list[1]
 
+code_lines = list()
+code_lines.append('SIMULATE')
 
+while not g.all_visit():
+    if current_vertex.generate is not None:
+        code_lines.append(f'GENERATE {current_vertex.generate}')
 
+    code_lines.extend(str(current_vertex).split('\n'))
+    current_vertex.visit = True
+
+    if len(current_vertex.neighbor) == 0:
+        # if vertex is last then take first unvisited vertex
+        current_vertex = g.vertex_list[g.unvisited()[0]]
+        continue
+
+    # index of one from neighbors
+    next_vertex = list(current_vertex.neighbor.keys())[0]
+
+    if len(current_vertex.neighbor) > 1:
+        # index of other neighbor
+        t_vertex = list(current_vertex.neighbor.keys())[1]
+
+        if g.vertex_list[next_vertex].visit:
+            tmp = t_vertex
+            t_vertex = next_vertex
+            next_vertex = tmp
+
+        s = f'TRANSFER {current_vertex.neighbor[t_vertex]},'
+
+        if g.vertex_list[next_vertex].visit:
+            s += f'LAB{next_vertex}'
+        s += f',LAB{t_vertex}'
+
+        code_lines.append(s)
+
+        if g.vertex_list[t_vertex].visit and g.vertex_list[next_vertex].visit:
+            current_vertex = g.vertex_list[g.unvisited()[0]]
+            continue
+
+    current_vertex = g.vertex_list[next_vertex]
+
+end_code = ['GENERATE 100', 'TERMINATE 1', 'START 1', 'END']
+code_lines.extend(end_code)
+
+with open('ver_code8.txt', 'w') as file:
+    for line_code in code_lines:
+        count = 3
+
+        if line_code == 'SIMULATE' or line_code == 'END':
+            count = 2
+
+        if 'GENERATE' in line_code or 'QUEUE' in line_code:
+            file.write('\n')
+
+        file.write(f'{" "*count}{line_code}\n')
+
+        if 'GENERATE' in line_code:
+            file.write('\n')
 
 
 def main():
     graph = []
     with open('ver8.txt') as f:
         for l in f:
-            graph.append([float(i) for i in l.split(', ')])
+            graph.append([
+                type_(i.strip())
+                for type_, i in zip((int, float, int), l.split(','))])
     result = ' SIMULATE\n'
     generate_transacts = [10, 20, 10]
     output_paths = Counter([graph[i][0] for i in range(len(graph))])
@@ -87,11 +172,13 @@ def main():
         if entrance_paths[graph[num_node][0]] < 2:
             result += f'  OUEUE QD{graph[num_node][0]}\n'
         else:
-            result += f'LAB{graph[num_node][0]} OUEUE QD{graph[num_node][0]}\n'\
-                      f'  SEIZE DD{graph[num_node][0]}\n' \
-                      f'  DEPART QD{graph[num_node][0]}\n' \
-                      f'  ADVANCE 1{graph[num_node][0]}\n' \
-                      f'  RELEASE DD{graph[num_node][0]}\n'
+            result += (
+                f'LAB{graph[num_node][0]} OUEUE QD{graph[num_node][0]}\n'
+                f'  SEIZE DD{graph[num_node][0]}\n'
+                f'  DEPART QD{graph[num_node][0]}\n'
+                f'  ADVANCE 1{graph[num_node][0]}\n'
+                f'  RELEASE DD{graph[num_node][0]}\n'
+            )
 
         if output_paths[graph[num_node][0]] > 1:
             result += f'  TRANSFER {graph[num_node + 1][1]}' \
@@ -100,9 +187,15 @@ def main():
         if graph[num_node][0] == 8:
             result += '  TERMINATE\n'
             flag = True
-            num_node = [graph[i][0] for i in range(len(graph))].index(start[points_entrance])
+            for i in range(len(graph)):
+                if graph[i][0] == start[points_entrance]:
+                    num_node = i
+                    break
         else:
-            num_node = [graph[i][0] for i in range(len(graph))].index(graph[num_node][2])
+            for i in range(len(graph)):
+                if graph[i][0] == graph[num_node][2]:
+                    num_node = i
+                    break
     result += '  GENERATE 100\n' \
               '  TERMINATE 1\n' \
               '  START 1\n' \
