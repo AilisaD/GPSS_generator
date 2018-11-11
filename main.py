@@ -63,7 +63,7 @@ class Graph:
 
 g = Graph()
 
-with open('ver3.txt') as file:
+with open('ver8.txt') as file:
     for line in file:
         if not line.strip():
             break
@@ -125,7 +125,7 @@ while not g.all_visit():
 end_code = ['GENERATE 100', 'TERMINATE 1', 'START 1', 'END']
 code_lines.extend(end_code)
 
-with open('ver_code3.txt', 'w') as file:
+with open('ver_code8.txt', 'w') as file:
     for line_code in code_lines:
         count = 3
         if 'LAB' in line_code and 'QUEUE' in line_code:
