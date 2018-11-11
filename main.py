@@ -3,13 +3,6 @@ from typing import Dict
 
 class Node:
     def __init__(self, name: int, generate: int=None):
-        """
-        Нода в графе.
-
-        Args:
-            name: Название ноды.
-            generate: Генертруемое число транзактов
-        """
         self.name_id = name
         self.neighbor = {}  # type: Dict[int, float]
         self.visit = False
