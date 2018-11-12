@@ -6,7 +6,12 @@
           <option name="url" value="http://github.com" />
           <option name="userName" value="chead.imreoir@gmail.com" />
         </UrlAndUserName>
+        <UrlAndUserName>
+          <option name="url" value="https://github.com/art1415926535/gpss_report_generator" />
+          <option name="userName" value="" />
+        </UrlAndUserName>
       </list>
     </option>
+    <option name="cloneParentDir" value="C:\Users\AD\PycharmProjects" />
   </component>
 </application>
